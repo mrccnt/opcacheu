@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<phpunit colors="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         verbose="true"
+         stopOnFailure="true">
+
+    <testsuites>
+        <testsuite name="All">
+            <file>./tests/OpcacheuTest.php</file>
+            <file>./tests/ConfigTest.php</file>
+        </testsuite>
+    </testsuites>
+
+    <filter>
+        <whitelist>
+            <directory suffix=".php">./../src</directory>
+        </whitelist>
+    </filter>
+
+</phpunit>

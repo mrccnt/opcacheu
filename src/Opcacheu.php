@@ -9,14 +9,14 @@ namespace Opcacheu;
 class Opcacheu
 {
     /**
-     * @var string  Content schema of cache file
+     * Content schema for cache files in $cachedir
      */
-    protected $contentSchema = '<?php $ttl = %s; $val = %s;';
+    const CONTENT_FORMAT = '<?php $ttl = %s; $val = %s;';
 
     /**
-     * @var string  Name schema for cache file
+     * Path schema for cache files in $cachedir
      */
-    protected $nameSchema = '%s/%s_%s.php';
+    const FILE_FORMAT = '%s/%s_%s.php';
 
     /**
      * @var Config  Cache configuration
@@ -26,11 +26,26 @@ class Opcacheu
     /**
      * Construct by passing in a config object
      *
-     * @param Config $config    Cache configuration
+     * @param Config $config Cache configuration
+     * @throws \Opcacheu\OpcacheuException
      */
     public function __construct($config)
     {
         $this->cfg = $config;
+
+        if (!is_dir($this->cfg->cachedir)) {
+            if (!$this->cfg->autocreate) {
+                throw new OpcacheuException(__FUNCTION__ . '(): Cache dir does not exist');
+            }
+            /** @noinspection PhpUsageOfSilenceOperatorInspection */
+            if (!@mkdir($this->cfg->cachedir, 0755, true)) {
+                throw new OpcacheuException(__FUNCTION__ . '(): Could not create cache dir');
+            }
+        }
+
+        if (!is_writeable($this->cfg->cachedir)) {
+            throw new OpcacheuException(__FUNCTION__ . '(): Cache dir is not writeable', 1);
+        }
     }
 
     /**
@@ -41,17 +56,34 @@ class Opcacheu
      */
     public function set($key, $val)
     {
-        $tmp = $this->getFilename($key) . '.' . uniqid('', true);
+        $file = $this->getFilename($key);
+        $tmp = $file . '.' . uniqid('', true);
+
+        /** @noinspection PhpParamsInspection */
+        if (opcache_is_script_cached($file)) {
+            if (!opcache_invalidate($file, true)) {
+                trigger_error(__FUNCTION__ . '(): Could not invalidate cache', E_USER_WARNING);
+            }
+        }
+
         file_put_contents(
             $tmp,
             sprintf(
-                $this->contentSchema,
+                self::CONTENT_FORMAT,
                 time() + $this->cfg->ttl,
                 var_export($val, true)
             ),
             LOCK_EX
         );
-        rename($tmp, $this->getFilename($key));
+
+        /** @noinspection PhpUsageOfSilenceOperatorInspection */
+        if (!@rename($tmp, $file)) {
+            trigger_error(__FUNCTION__ . '(): Could not rename file', E_USER_WARNING);
+        }
+
+        if (!opcache_compile_file($file)) {
+            trigger_error(__FUNCTION__ . '(): Could not compile file', E_USER_WARNING);
+        }
     }
 
     /**
@@ -66,19 +98,31 @@ class Opcacheu
      */
     public function get($key, $default = null)
     {
-        /** @noinspection PhpIncludeInspection */
-        /** @noinspection PhpUsageOfSilenceOperatorInspection */
-        @include $this->getFilename($key);
+        $file = $this->getFilename($key);
+
+        try {
+            /** @noinspection PhpIncludeInspection */
+            include $file;
+        } catch (\Exception $exception) {
+            return $default;
+        }
 
         if (!isset($ttl) || !isset($val)) {
             return $default;
         }
 
         if ($ttl < time()) {
+            // First get() after ttl is invalid, results in longer response time (removing file)
             $this->remove($key);
             return $default;
         }
 
+        /** @noinspection PhpParamsInspection */
+        if (!opcache_is_script_cached($file)) {
+            if (!opcache_compile_file($file)) {
+                trigger_error(__FUNCTION__ . '(): Could not compile file', E_USER_WARNING);
+            }
+        }
         /** @noinspection PhpUndefinedVariableInspection */
         return $val;
     }
@@ -90,8 +134,19 @@ class Opcacheu
      */
     public function remove($key)
     {
-        /** @noinspection PhpUsageOfSilenceOperatorInspection */
-        @unlink($this->getFilename($key));
+        $file = $this->getFilename($key);
+
+        /** @noinspection PhpParamsInspection */
+        if (opcache_is_script_cached($file)) {
+            if (!opcache_invalidate($file, true)) {
+                trigger_error(__FUNCTION__ . '(): Could not invalidate cache', E_USER_WARNING);
+            }
+        }
+
+        if (file_exists($file)) {
+            /** @noinspection PhpUsageOfSilenceOperatorInspection */
+            @unlink($file);
+        }
     }
 
     /**
@@ -102,6 +157,6 @@ class Opcacheu
      */
     protected function getFilename($key)
     {
-        return sprintf($this->nameSchema, $this->cfg->cachedir, $this->cfg->prefix, $key);
+        return sprintf(self::FILE_FORMAT, $this->cfg->cachedir, $this->cfg->prefix, $key);
     }
 }

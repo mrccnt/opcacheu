@@ -17,6 +17,7 @@
     <property name="dir.report.pdepend" value="${dir.report}/pdepend"/>
     <property name="dir.report.phpcpd" value="${dir.report}/phpcpd"/>
     <property name="dir.report.phploc" value="${dir.report}/phploc"/>
+    <property name="dir.report.phpunit" value="${dir.report}/phpunit"/>
     <property name="dir.report.apigen" value="${dir.report}/apigen"/>
     <property name="dir.report.doc" value="${dir.report}/phpdocumentor"/>
     
@@ -54,6 +55,7 @@
     <target name="create:reports"
             hidden="true"
             depends="
+            report:phpunit,
             report:phpmd,
             report:phpcs,
             report:pdepend,
@@ -170,6 +172,27 @@
         <phplint haltonfailure="true" tofile="${dir.report.lint}/files.txt" level="verbose">
             <fileset refid="testfiles"/>
         </phplint>
+    </target>
+
+    <target name="report:phpunit" hidden="true">
+
+        <mkdir dir="${dir.report.phpunit}"/>
+
+        <!--
+        <phpunit printsummary="true" configuration="phpunit.xml">
+            <formatter type="xml" todir="${dir.report.phpunit}" outfile="report.xml" usefile="true"/>
+        </phpunit>
+        -->
+
+        <phpunit printsummary="true" configuration="phpunit.xml">
+            <formatter todir="${dir.report.phpunit}" type="xml"/>
+            <batchtest>
+                <fileset dir="tests">
+                    <include name="**/*Test*.php"/>
+                </fileset>
+            </batchtest>
+        </phpunit>
+
     </target>
 
     <target name="report:phpmd" hidden="true">

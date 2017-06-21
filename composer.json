@@ -15,21 +15,35 @@
   ],
   "homepage": "https://github.com/mrccnt/opcacheu",
   "require": {
-    "php": ">=5.5.0 || >=7.0.0"
+    "php": ">=5.5.0 || >=7.0.0",
+    "ext-Zend-OPcache": "*"
   },
   "require-dev": {
-    "phpunit/phpunit": "4.8.*",
     "squizlabs/php_codesniffer": "^2.6",
     "phpmd/phpmd": "^2.4",
     "phing/phing": "^2.16",
     "pear/http_request2": "^2.3",
     "sebastian/phpcpd": "^2.0",
     "pdepend/pdepend": "^2.5",
-    "phpseclib/phpseclib": "^2.0"
+    "phpseclib/phpseclib": "^2.0",
+    "phpunit/phpunit": "^4.8"
   },
   "autoload": {
     "psr-4": {
       "Opcacheu\\": "src/"
     }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "OpcacheuTest\\": "tests/"
+    }
+  },
+  "scripts": {
+    "build": "vendor/bin/phing build -Dmode=production",
+    "build-win": "vendor\\bin\\phing.bat build -Dmode=production",
+    "reports": "vendor/bin/phing report -Dmode=production",
+    "reports-win": "vendor\\bin\\phing.bat report -Dmode=production",
+    "test": "vendor/bin/phpunit --bootstrap vendor/autoload.php",
+    "test-win": "vendor\\bin\\phpunit --bootstrap vendor\\autoload.php"
   }
 }

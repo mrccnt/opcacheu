@@ -2,6 +2,14 @@
 
 Experiment to check how OPcache can be utilized to work as a user data storage. After an idea of [Dylan Wenzlau](https://blog.graphiq.com/500x-faster-caching-than-redis-memcache-apc-in-php-hhvm-dcd26e8447ad).
 
+## Install, Test and Build
+
+```bash
+composer install    # Of course... Install dependencies...
+composer reports    # Execute tests and create reports (dist/report)
+composer build      # Build production zip file
+```
+
 ## How to
 
 ```php
@@ -12,6 +20,7 @@ $cache = new \Opcacheu\Opcacheu(
             'cachedir' => '/custom/cache/directory',
             'ttl' => 3600,
             'prefix' => 'myprefix',
+            'autocreate' => true,
         ]
     )
 );
@@ -23,6 +32,8 @@ $cache->set('hello', 'world');
 $value = $cache->get('hello');
 ```
 
-Somehow OPcache caches the generated file after the current php process has ended. So setting up a value and refering to
-it in the same request does not perform that good. It could be usefull to populate your cache via its own action. Maybe
-a simple cli command or something...
+## How does it work / Timings
+
+Keep in mind how OPcache handles files. Every time the php process handles a file via autoloading or `include` or
+something, it creates a cache entry for that file in its storage. The next time php tries to load the file, OPcache
+serves the precompiled file out of its storage.

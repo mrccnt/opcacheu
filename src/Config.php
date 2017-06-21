@@ -9,43 +9,56 @@ namespace Opcacheu;
 class Config
 {
     /**
-     * @var string  Cache files directory
+     * Default TTL
+     */
+    const TTL = 3600;
+
+    /**
+     * Default Prefix
+     */
+    const PREFIX = 'default';
+
+    /**
+     * Default autocreate
+     */
+    const AUTO = true;
+
+    /**
+     * Default autocreate
+     */
+    const DEFAULT_DIR = 'opcacheu';
+
+    /**
+     * @var string Cache files directory
      */
     public $cachedir;
 
     /**
      * @var int Time To Live
      */
-    public $ttl = 3600;
+    public $ttl = self::TTL;
 
     /**
-     * @var string  Default cache file prefix
+     * @var string Default cache file prefix
      */
-    public $prefix = 'default';
+    public $prefix = self::PREFIX;
+
+    /**
+     * @var bool Autocreate cache directory
+     */
+    public $autocreate = self::AUTO;
 
     /**
      * Config constructor.
      *
-     * @param array $props          Configuration settings
-     * @param bool  $autocreate     Automatically check & create cache directory if it does not exist
-     * @throws \Exception
+     * @param array $props      Configuration settings
      */
-    public function __construct($props = [], $autocreate = false)
+    public function __construct($props = [])
     {
-        $this->cachedir = sys_get_temp_dir() . '/opcacheu';
+        $this->cachedir = sys_get_temp_dir() . '/' . self::DEFAULT_DIR;
         foreach ($props as $name => $value) {
             if (property_exists($this, $name)) {
                 $this->{$name} = $value;
-            }
-        }
-        if ($autocreate) {
-            if (!is_dir($this->cachedir)) {
-                if (!mkdir($this->cachedir, 0755, true)) {
-                    throw new \Exception('Could not create cache dir', 1);
-                }
-            }
-            if (!is_writeable($this->cachedir)) {
-                throw new \Exception('Cache dir is not writeable', 1);
             }
         }
     }
